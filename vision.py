@@ -1,11 +1,13 @@
 import cv2
 import numpy as np
 import mss
+import subprocess
+import os
 from config import LOWER_GREEN, UPPER_GREEN, LOWER_CURSOR, UPPER_CURSOR, FISHING_REGION
 
 def grab_screen(region=None):
     """
-    擷取螢幕畫面
+    擷取螢幕畫面 (Windows版本)
     :param region: 擷取區域 (dict)，格式如 {"top": y, "left": x, "width": w, "height": h}
     :return: BGR 格式的 numpy 陣列影像
     """
@@ -19,6 +21,28 @@ def grab_screen(region=None):
         # 轉換為 numpy 陣列，然後從 BGRA 轉為 BGR
         img = np.array(screenshot)
         return cv2.cvtColor(img, cv2.COLOR_BGRA2BGR)
+
+def grab_screen_android():
+    """
+    擷取Android螢幕畫面 (使用ADB)
+    :return: BGR 格式的 numpy 陣列影像
+    """
+    try:
+        # 使用ADB截圖並推送至電腦
+        subprocess.run(['adb', 'shell', 'screencap', '-p', '/sdcard/screen.png'], check=True, capture_output=True)
+        subprocess.run(['adb', 'pull', '/sdcard/screen.png', './temp_screen.png'], check=True, capture_output=True)
+        
+        # 讀取圖片
+        screen = cv2.imread('./temp_screen.png')
+        
+        # 刪除臨時文件
+        if os.path.exists('./temp_screen.png'):
+            os.remove('./temp_screen.png')
+            
+        return screen
+    except Exception as e:
+        print(f"Android截圖錯誤: {e}")
+        return None
 
 def find_center_x(image, lower, upper):
     """
